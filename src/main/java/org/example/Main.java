@@ -7,6 +7,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class Main {
@@ -61,9 +62,44 @@ public class Main {
     }
     public static void main(String[] args) {
         Main main = new Main();
-       // Customer customer = main.createNewCustomer();
-        main.returnRentalMovie();
+       Customer customer = main.createNewCustomer();
+       // main.returnRentalMovie();
+        main.customerRentInv(customer);
     }
+
+    private void customerRentInv(Customer customer) {
+        try(Session session = sessionFactory.getCurrentSession()) {
+            Transaction transaction = session.beginTransaction();
+
+            Store store = storeDAO.getItems(0, 1).get(0);
+            Film film = filmDAO.getAvaliableFilmToRent();
+
+            Inventory inventory = new Inventory();
+            inventory.setFilm(film);
+            inventory.setStore(store);
+            inventoryDAO.create(inventory);
+
+            Staff staff = store.getStaff();
+
+            Rental rental = new Rental();
+            rental.setCustomer(customer);
+            rental.setRentalDate(LocalDateTime.now());
+            rental.setInventory(inventory);
+            rental.setStaff(staff);
+            rentalDAO.create(rental);
+
+            Payment payment = new Payment();
+            payment.setCustomer(customer);
+            payment.setRental(rental);
+            payment.setStaff(staff);
+            payment.setAmount(BigDecimal.valueOf(245.5));
+            payment.setPaymentDate(LocalDateTime.now());
+            paymentDAO.create(payment);
+
+            transaction.commit();
+        }
+    }
+
     private Customer createNewCustomer() {
         try (Session session = sessionFactory.getCurrentSession()){
             Transaction transaction = session.beginTransaction();
