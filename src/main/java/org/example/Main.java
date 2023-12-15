@@ -9,6 +9,10 @@ import org.hibernate.cfg.Configuration;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Year;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class Main {
     private final SessionFactory sessionFactory;
@@ -62,9 +66,45 @@ public class Main {
     }
     public static void main(String[] args) {
         Main main = new Main();
-       Customer customer = main.createNewCustomer();
+       // Customer customer = main.createNewCustomer();
        // main.returnRentalMovie();
-        main.customerRentInv(customer);
+       // main.customerRentInv(customer);
+        main.createNewMovie();
+    }
+
+    private void createNewMovie() {
+        try(Session session = sessionFactory.getCurrentSession()) {
+            Transaction transaction = session.beginTransaction();
+
+            Language language = languageDAO.getItems(0, 20).stream().unordered().findAny().get();
+            List<Category> category = categoryDAO.getItems(0, 10);
+            List<Actor> actors = actorDAO.getItems(0, 30);
+
+            Film film = new Film();
+            film.setActors(new HashSet<>(actors));
+            film.setTitle("New movie");
+            film.setDescription("smth...");
+            film.setReleaseYear(Year.now());
+            film.setLanguage(language);
+            film.setRentalDuration((byte) 4);
+            film.setRentalRate(BigDecimal.valueOf(5));
+            film.setLength((short) 9);
+            film.setReplacementCost(BigDecimal.valueOf(5));
+            film.setRating(Rating.NC17);
+            film.setSpecialFeatures(Set.of(Features.Commentaries, Features.Behind_the_Scenes));
+            film.setCategories(new HashSet<>(category));
+            film.setOriginalLanguageId(language);
+            filmDAO.create(film);
+
+            FilmText filmText = new FilmText();
+            filmText.setFilm(film);
+            filmText.setDescription("smth...");
+            filmText.setTitle("New movie");
+            filmText.setId((short) 2);
+            filmTextDAO.create(filmText);
+
+            transaction.commit();
+        }
     }
 
     private void customerRentInv(Customer customer) {
