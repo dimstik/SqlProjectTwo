@@ -7,7 +7,11 @@ import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Year;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.Objects.isNull;
 
 @Entity
 @Table(schema = "movie", name = "film")
@@ -22,6 +26,7 @@ public class Film {
     @Type(type = "text")
     private String description;
     @Column(name = "release_year", columnDefinition = "year")
+    @Convert(converter = YearAttributeConverter.class)
     private Year releaseYear;
     @ManyToOne
     @JoinColumn(name = "language_id")
@@ -38,6 +43,7 @@ public class Film {
     @Column(name = "replacement_cost")
     private BigDecimal replacementCost;
     @Column(name = "rating", columnDefinition = "enum('G', 'PG', 'PG-13', 'R', 'NC-17')")
+    @Convert(converter = RatingConventer.class)
     private Rating rating;
     @Column(name = "special_features", columnDefinition = "set('Trailers', 'Commentaries', 'Deleted Scenes', 'Behind the Scenes')")
     private String specialFeatures;
@@ -164,12 +170,25 @@ public class Film {
         this.rating = rating;
     }
 
-    public String getSpecialFeatures() {
-        return specialFeatures;
+    public Set<Features> getSpecialFeatures() {
+        if(isNull(specialFeatures) || specialFeatures.isEmpty()) {
+            return null;
+        }
+        Set<Features> result = new HashSet<>();
+        String[] split = specialFeatures.split(",");
+        for (String feature : split) {
+            result.add(Features.getFeaturesByValue(feature));
+        }
+        result.remove(null);
+        return result;
     }
 
-    public void setSpecialFeatures(String specialFeatures) {
-        this.specialFeatures = specialFeatures;
+    public void setSpecialFeatures(Set<Features> features) {
+        if (isNull(features)) {
+            specialFeatures = null;
+        } else {
+            specialFeatures = features.stream().map(Features::getValue).collect(Collectors.joining(","));
+        }
     }
 
     public LocalDate getLastUpdate() {
